@@ -1,22 +1,21 @@
 package tests;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.*;
+import org.testng.Assert;
 import pages.LoginPage;
+import utils.LoginDataProvider;
 
 import java.time.Duration;
 
 public class LoginTest {
     private WebDriver driver;
     private WebDriverWait wait;
-    @Before
+    @BeforeMethod
     public void start(){
         driver = new ChromeDriver();
         driver.manage().window().maximize();
@@ -24,7 +23,7 @@ public class LoginTest {
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    @After
+    @AfterMethod
     public void tearDown(){
         if (driver!=null){
             driver.quit();
@@ -39,7 +38,7 @@ public class LoginTest {
         //Thread.sleep(2000); // waits for 2sec
         //Explicit wait for synchronization using selenium. waits for 10s until inventory url getting. ow goto next line
         wait.until(ExpectedConditions.urlContains("inventory"));
-        Assert.assertTrue("Login failed", driver.getCurrentUrl().contains("inventory"));
+        Assert.assertTrue(driver.getCurrentUrl().contains("inventory"), "Login failed");
     }
 
     @Test
@@ -51,5 +50,21 @@ public class LoginTest {
         System.out.println(error);
         Assert.assertTrue(error.contains("Username and password do not match"));
     }
+
+    @Test(dataProvider = "LoginCredentials", dataProviderClass = LoginDataProvider.class)
+    public void testMultipleLogins(String username, String password) {
+        LoginPage loginPage = new LoginPage(driver);
+        loginPage.loginMethod(username, password);
+
+        if (username.equals("locked_out_user")) {
+            String errorText = driver.findElement(By.cssSelector("[data-test='error']")).getText();
+            Assert.assertTrue(errorText.contains("locked out"));
+        } else {
+            Assert.assertTrue(driver.getCurrentUrl().contains("inventory"));
+        }
+    }
+
+
+
 
 }
